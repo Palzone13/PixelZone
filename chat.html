@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Rooms — PIXELZONE</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Exo+2:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #10101a;
+      --bg3: #14141f;
+      --neon-cyan: #00f5ff;
+      --neon-pink: #ff00aa;
+      --neon-yellow: #ffe600;
+      --neon-green: #00ff88;
+      --text: #e8e8ff;
+      --muted: #5a5a7a;
+      --card-bg: #12121e;
+      --card-border: #1e1e32;
+      --glow-cyan: 0 0 8px #00f5ff88, 0 0 24px #00f5ff44, 0 0 48px #00f5ff22;
+      --glow-pink: 0 0 8px #ff00aa88, 0 0 24px #00ff00aa44;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px);
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(0,245,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,245,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #back-btn {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      z-index: 100;
+      background: rgba(10,10,15,0.85);
+      border: 1px solid rgba(0,245,255,0.4);
+      color: #00f5ff;
+      font-family: Tahoma, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #back-btn:hover {
+      background: rgba(0,245,255,0.15);
+      box-shadow: 0 0 12px rgba(0,245,255,0.3);
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 80px 20px 40px;
+    }
+
+    .chat-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .chat-header h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(1rem, 3vw, 1.5rem);
+      color: var(--neon-cyan);
+      text-shadow: var(--glow-cyan);
+      line-height: 1.8;
+      margin-bottom: 0.5rem;
+    }
+
+    .chat-header p {
+      font-size: 0.8rem;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .main-view {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    /* Room List */
+    .room-list-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 20px;
+      position: sticky;
+      top: 80px;
+    }
+
+    .room-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .room-list-header h3 {
+      font-size: 0.75rem;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .create-room-btn {
+      background: var(--neon-green);
+      color: #0a0a0f;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .create-room-btn:hover {
+      background: #80ffbb;
+    }
+
+    .room-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .room-item {
+      background: var(--bg2);
+      border: 1px solid var(--card-border);
+      border-radius: 4px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .room-item:hover {
+      border-color: var(--neon-cyan);
+      background: rgba(0,245,255,0.05);
+    }
+
+    .room-item.active {
+      border-color: var(--neon-cyan);
+      background: rgba(0,245,255,0.1);
+    }
+
+    .room-name {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--text);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .room-lock {
+      font-size: 0.7rem;
+      color: var(--neon-yellow);
+    }
+
+    .room-info {
+      font-size: 0.7rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Chat Area */
+    .chat-area {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .chat-area-header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--card-border);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .current-room-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--neon-cyan);
+    }
+
+    .leave-room-btn {
+      background: transparent;
+      border: 1px solid var(--neon-pink);
+      color: var(--neon-pink);
+      padding: 6px 12px;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .leave-room-btn:hover {
+      background: rgba(255,0,170,0.1);
+    }
+
+    .messages {
+      height: 450px;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .messages::-webkit-scrollbar { width: 8px; }
+    .messages::-webkit-scrollbar-track { background: var(--bg2); }
+    .messages::-webkit-scrollbar-thumb { background: var(--neon-cyan); border-radius: 4px; }
+
+    .message {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .message-user {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--neon-cyan);
+    }
+
+    .message-time {
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .message-content {
+      background: var(--bg2);
+      padding: 10px 14px;
+      border-radius: 4px;
+      border-left: 3px solid var(--neon-cyan);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+
+    .message.system .message-content {
+      background: rgba(255,230,0,0.1);
+      border-left-color: var(--neon-yellow);
+      color: var(--neon-yellow);
+      font-size: 0.8rem;
+      text-align: center;
+      font-style: italic;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 12px;
+      padding: 20px;
+      background: var(--bg2);
+      border-top: 1px solid var(--card-border);
+    }
+
+    .input-area input {
+      flex: 1;
+      background: var(--card-bg);
+      border: 1px solid rgba(0,245,255,0.3);
+      border-radius: 4px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-area input:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 0 2px rgba(0,245,255,0.15);
+    }
+
+    .input-area input::placeholder { color: var(--muted); }
+
+    .send-btn {
+      background: var(--neon-cyan);
+      color: #0a0a0f;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    .send-btn:hover {
+      background: #80faff;
+      box-shadow: var(--glow-cyan);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .no-room-selected {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 500px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .no-room-selected-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Modals */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.hidden { display: none; }
+
+    .modal-content {
+      background: var(--bg2);
+      border: 1px solid rgba(0,245,255,0.3);
+      border-radius: 6px;
+      padding: 2rem;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.8), 0 0 40px rgba(0,245,255,0.1);
+    }
+
+    .modal-content h2 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.9rem;
+      color: var(--neon-cyan);
+      text-shadow: var(--glow-cyan);
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+
+    .modal-content p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .modal-content input {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid rgba(0,245,255,0.3);
+      border-radius: 4px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .modal-content input:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 0 2px rgba(0,245,255,0.15);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 1.5rem;
+    }
+
+    .modal-actions button {
+      flex: 1;
+      background: var(--neon-cyan);
+      color: #0a0a0f;
+      border: none;
+      padding: 12px;
+      border-radius: 4px;
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .modal-actions button:hover { background: #80faff; }
+
+    .modal-actions .cancel-btn {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--muted);
+    }
+
+    .modal-actions .cancel-btn:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+    }
+
+    @media (max-width: 900px) {
+      .main-view { grid-template-columns: 1fr; }
+      .room-list-panel { position: static; }
+      .messages { height: 350px; }
+    }
+  </style>
+</head>
+<body>
+
+<a id="back-btn" href="index.html">← Back</a>
+
+<div class="container">
+  <div class="chat-header">
+    <h1>CHAT ROOMS</h1>
+    <p>Join or create rooms · Public or private</p>
+  </div>
+
+  <div class="main-view">
+    <div class="room-list-panel">
+      <div class="room-list-header">
+        <h3>Rooms</h3>
+        <button class="create-room-btn" id="createRoomBtn">+ New</button>
+      </div>
+      <div class="room-list" id="roomList"></div>
+    </div>
+
+    <div class="chat-area">
+      <div id="noRoomView" class="no-room-selected">
+        <div class="no-room-selected-icon">💬</div>
+        <p>Select a room to start chatting<br>or create your own!</p>
+      </div>
+
+      <div id="chatView" style="display:none;">
+        <div class="chat-area-header">
+          <div class="current-room-name" id="currentRoomName"></div>
+          <button class="leave-room-btn" id="leaveRoomBtn">Leave Room</button>
+        </div>
+        <div class="messages" id="messages"></div>
+        <div class="input-area">
+          <input type="text" id="messageInput" placeholder="Type a message..." maxlength="500">
+          <button class="send-btn" id="sendBtn">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="usernameModal">
+  <div class="modal-content">
+    <h2>Enter Username</h2>
+    <p>Choose a name to join chat rooms</p>
+    <div class="form-group">
+      <input type="text" id="usernameInput" placeholder="Username" maxlength="20">
+    </div>
+    <div class="modal-actions">
+      <button id="joinBtn">Join</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="createRoomModal">
+  <div class="modal-content">
+    <h2>Create Room</h2>
+    <div class="form-group">
+      <label>Room Name</label>
+      <input type="text" id="roomNameInput" placeholder="My Cool Room" maxlength="30">
+    </div>
+    <div class="form-group">
+      <label>Password (optional)</label>
+      <input type="password" id="roomPasswordInput" placeholder="Leave empty for public room" maxlength="50">
+    </div>
+    <div class="modal-actions">
+      <button class="cancel-btn" id="cancelCreateBtn">Cancel</button>
+      <button id="confirmCreateBtn">Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="passwordModal">
+  <div class="modal-content">
+    <h2>Enter Password</h2>
+    <p id="passwordRoomName"></p>
+    <div class="form-group">
+      <input type="password" id="passwordInput" placeholder="Room password">
+    </div>
+    <div class="modal-actions">
+      <button class="cancel-btn" id="cancelPasswordBtn">Cancel</button>
+      <button id="confirmPasswordBtn">Join</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let username = localStorage.getItem('chatUsername') || '';
+  let rooms = JSON.parse(localStorage.getItem('chatRooms') || '[]');
+  let currentRoom = null;
+  let selectedRoomToJoin = null;
+
+  const usernameModal = document.getElementById('usernameModal');
+  const usernameInput = document.getElementById('usernameInput');
+  const joinBtn = document.getElementById('joinBtn');
+  const createRoomModal = document.getElementById('createRoomModal');
+  const createRoomBtn = document.getElementById('createRoomBtn');
+  const roomNameInput = document.getElementById('roomNameInput');
+  const roomPasswordInput = document.getElementById('roomPasswordInput');
+  const confirmCreateBtn = document.getElementById('confirmCreateBtn');
+  const cancelCreateBtn = document.getElementById('cancelCreateBtn');
+  const passwordModal = document.getElementById('passwordModal');
+  const passwordInput = document.getElementById('passwordInput');
+  const passwordRoomName = document.getElementById('passwordRoomName');
+  const confirmPasswordBtn = document.getElementById('confirmPasswordBtn');
+  const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+  const roomList = document.getElementById('roomList');
+  const noRoomView = document.getElementById('noRoomView');
+  const chatView = document.getElementById('chatView');
+  const currentRoomName = document.getElementById('currentRoomName');
+  const messages = document.getElementById('messages');
+  const messageInput = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const leaveRoomBtn = document.getElementById('leaveRoomBtn');
+
+  if (!username) {
+    usernameModal.classList.remove('hidden');
+    usernameInput.focus();
+  } else {
+    initializeChat();
+  }
+
+  if (rooms.length === 0) {
+    rooms = [
+      { id: 'general', name: 'General', password: '', messages: [], created: Date.now() },
+      { id: 'gaming', name: 'Gaming Chat', password: '', messages: [], created: Date.now() },
+      { id: 'vip', name: 'VIP Lounge', password: 'secret', messages: [], created: Date.now() }
+    ];
+    saveRooms();
+  }
+
+  joinBtn.addEventListener('click', () => {
+    const name = usernameInput.value.trim();
+    if (name && name.length >= 2) {
+      username = name;
+      localStorage.setItem('chatUsername', username);
+      usernameModal.classList.add('hidden');
+      initializeChat();
+    } else {
+      alert('Username must be at least 2 characters');
+    }
+  });
+
+  usernameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') joinBtn.click();
+  });
+
+  function initializeChat() {
+    renderRoomList();
+    setInterval(updateRoomList, 3000);
+    setInterval(updateMessages, 2000);
+  }
+
+  createRoomBtn.addEventListener('click', () => {
+    createRoomModal.classList.remove('hidden');
+    roomNameInput.focus();
+  });
+
+  cancelCreateBtn.addEventListener('click', () => {
+    createRoomModal.classList.add('hidden');
+    roomNameInput.value = '';
+    roomPasswordInput.value = '';
+  });
+
+  confirmCreateBtn.addEventListener('click', () => {
+    const name = roomNameInput.value.trim();
+    const password = roomPasswordInput.value.trim();
+    
+    if (!name) {
+      alert('Please enter a room name');
+      return;
+    }
+
+    const newRoom = {
+      id: 'room_' + Date.now(),
+      name: name,
+      password: password,
+      messages: [],
+      created: Date.now()
+    };
+
+    rooms.push(newRoom);
+    saveRooms();
+    createRoomModal.classList.add('hidden');
+    roomNameInput.value = '';
+    roomPasswordInput.value = '';
+    renderRoomList();
+    joinRoom(newRoom);
+  });
+
+  function renderRoomList() {
+    roomList.innerHTML = '';
+    rooms.forEach(room => {
+      const div = document.createElement('div');
+      div.className = 'room-item';
+      if (currentRoom && currentRoom.id === room.id) {
+        div.classList.add('active');
+      }
+      
+      const recentMessages = room.messages.filter(m => 
+        Date.now() - new Date(m.time).getTime() < 5 * 60 * 1000
+      );
+      const uniqueUsers = new Set(recentMessages.map(m => m.user));
+      const onlineCount = uniqueUsers.size;
+
+      div.innerHTML = `
+        <div class="room-name">
+          ${escapeHtml(room.name)}
+          ${room.password ? '<span class="room-lock">🔒</span>' : ''}
+        </div>
+        <div class="room-info">
+          <span>${onlineCount} online</span>
+          <span>${room.messages.length} msgs</span>
+        </div>
+      `;
+      
+      div.addEventListener('click', () => {
+        if (room.password) {
+          selectedRoomToJoin = room;
+          passwordRoomName.textContent = `Room: ${room.name}`;
+          passwordModal.classList.remove('hidden');
+          passwordInput.focus();
+        } else {
+          joinRoom(room);
+        }
+      });
+      
+      roomList.appendChild(div);
+    });
+  }
+
+  cancelPasswordBtn.addEventListener('click', () => {
+    passwordModal.classList.add('hidden');
+    passwordInput.value = '';
+    selectedRoomToJoin = null;
+  });
+
+  confirmPasswordBtn.addEventListener('click', () => {
+    const enteredPassword = passwordInput.value;
+    if (enteredPassword === selectedRoomToJoin.password) {
+      passwordModal.classList.add('hidden');
+      passwordInput.value = '';
+      joinRoom(selectedRoomToJoin);
+      selectedRoomToJoin = null;
+    } else {
+      alert('Incorrect password!');
+    }
+  });
+
+  passwordInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') confirmPasswordBtn.click();
+  });
+
+  function joinRoom(room) {
+    currentRoom = room;
+    noRoomView.style.display = 'none';
+    chatView.style.display = 'block';
+    currentRoomName.textContent = room.name + (room.password ? ' 🔒' : '');
+    renderMessages();
+    renderRoomList();
+    messageInput.focus();
+    addSystemMessage(`${username} joined the room`);
+  }
+
+  leaveRoomBtn.addEventListener('click', () => {
+    if (currentRoom) {
+      addSystemMessage(`${username} left the room`);
+      currentRoom = null;
+      noRoomView.style.display = 'flex';
+      chatView.style.display = 'none';
+      renderRoomList();
+    }
+  });
+
+  function sendMessage() {
+    if (!currentRoom) return;
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    const message = {
+      user: username,
+      text: text,
+      time: new Date().toISOString(),
+      id: Date.now()
+    };
+
+    currentRoom.messages.push(message);
+    if (currentRoom.messages.length > 200) {
+      currentRoom.messages.shift();
+    }
+
+    saveRooms();
+    messageInput.value = '';
+    renderMessages();
+    scrollToBottom();
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  function renderMessages() {
+    if (!currentRoom) return;
+    messages.innerHTML = '';
+    currentRoom.messages.forEach(msg => {
+      const div = document.createElement('div');
+      div.className = msg.system ? 'message system' : 'message';
+      
+      if (msg.system) {
+        div.innerHTML = `<div class="message-content">${escapeHtml(msg.text)}</div>`;
+      } else {
+        const time = new Date(msg.time);
+        const timeStr = time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        div.innerHTML = `
+          <div class="message-header">
+            <span class="message-user">${escapeHtml(msg.user)}</span>
+            <span class="message-time">${timeStr}</span>
+          </div>
+          <div class="message-content">${escapeHtml(msg.text)}</div>
+        `;
+      }
+      messages.appendChild(div);
+    });
+    scrollToBottom();
+  }
+
+  function addSystemMessage(text) {
+    if (!currentRoom) return;
+    const message = {
+      text: text,
+      time: new Date().toISOString(),
+      system: true,
+      id: Date.now()
+    };
+    currentRoom.messages.push(message);
+    saveRooms();
+    renderMessages();
+  }
+
+  function updateRoomList() {
+    rooms = JSON.parse(localStorage.getItem('chatRooms') || '[]');
+    renderRoomList();
+  }
+
+  function updateMessages() {
+    if (!currentRoom) return;
+    rooms = JSON.parse(localStorage.getItem('chatRooms') || '[]');
+    const updatedRoom = rooms.find(r => r.id === currentRoom.id);
+    if (updatedRoom && updatedRoom.messages.length !== currentRoom.messages.length) {
+      currentRoom = updatedRoom;
+      renderMessages();
+    }
+  }
+
+  function saveRooms() {
+    localStorage.setItem('chatRooms', JSON.stringify(rooms));
+  }
+
+  function scrollToBottom() {
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+</script>
+
+</body>
+</html>
